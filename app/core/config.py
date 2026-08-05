@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:admin@inovera.family"
     # Path to a Firebase service-account JSON file, for sending push to the
     # Android app via FCM. Empty disables Android push (web push still works).
-    fcm_credentials_path: str = ""
+    fcm_credentials_path: str = "./admin.json"
     reminder_scheduler_interval_seconds: int = 60
 
 
