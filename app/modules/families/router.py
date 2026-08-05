@@ -74,13 +74,17 @@ def add_member(family_id: uuid.UUID):
     owner_membership = require_owner(db, family_id, user_id)
     payload = AddMemberRequest(**request.get_json(force=True))
     try:
-        membership, created_new_account = service.add_member_by_email(
+        membership, created_new_account, password_setup_url = service.add_member_by_email(
             db, family_id, owner_membership.user_id, payload.email, payload.role, payload.name
         )
     except service.FamilyError as exc:
         raise AppError(status.HTTP_409_CONFLICT, str(exc)) from exc
     membership_dict = service.to_membership_dict(db, membership)
     return envelope(
-        AddMemberResponse(membership=MembershipResponse.model_validate(membership_dict), created_new_account=created_new_account),
+        AddMemberResponse(
+            membership=MembershipResponse.model_validate(membership_dict),
+            created_new_account=created_new_account,
+            password_setup_url=password_setup_url,
+        ),
         status.HTTP_201_CREATED,
     )

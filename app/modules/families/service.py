@@ -159,7 +159,7 @@ def add_member_by_email(
     email: str,
     role: FamilyRole,
     name: str,
-) -> tuple[FamilyMembership, bool]:
+) -> tuple[FamilyMembership, bool, str | None]:
     """Owner-initiated add (distinct from the invitations module's
     invite-then-accept flow): the owner supplies the email directly and the
     person is a member immediately - no separate acceptance step.
@@ -186,6 +186,7 @@ def add_member_by_email(
 
     membership = add_member(db, family_id, user.id, role)
 
+    setup_link: str | None = None
     if created_new_account:
         raw_token = auth_service.issue_password_setup_token(db, user.id)
         setup_link = f"{settings.web_app_base_url}/set-password/{raw_token}"
@@ -197,7 +198,7 @@ def add_member_by_email(
         db.commit()
         db.refresh(notification)
 
-    return membership, created_new_account
+    return membership, created_new_account, setup_link
 
 
 def to_membership_dict(db: Session, membership: FamilyMembership) -> dict:

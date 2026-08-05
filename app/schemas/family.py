@@ -49,3 +49,6 @@ class AddMemberResponse(BaseModel):
     # True if this email had no existing account - they were emailed a
     # set-your-password link instead of being added instantly and ready to log in.
     created_new_account: bool
+    # Present only when created_new_account is True - the owner can copy this
+    # and share it directly (SMS/WhatsApp/etc) instead of relying on email delivery.
+    password_setup_url: str | None = None
