@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -79,9 +79,17 @@ def _budget_statuses_for_year(db: Session, family_id: uuid.UUID, year_start: dat
 
 
 def _upcoming_bills(db: Session, family_id: uuid.UUID) -> list[RecurringBill]:
+    """Active bills due within the next 15 days - overdue bills (due date
+    already in the past) are included too, so the owner is never blindsided
+    by a bill that silently aged out of the window."""
+    cutoff = date.today() + timedelta(days=15)
     result = db.scalars(
         select(RecurringBill)
-        .where(RecurringBill.family_id == family_id, RecurringBill.status == BillStatus.ACTIVE)
+        .where(
+            RecurringBill.family_id == family_id,
+            RecurringBill.status == BillStatus.ACTIVE,
+            RecurringBill.next_due_date <= cutoff,
+        )
         .order_by(RecurringBill.next_due_date)
     )
     return list(result)

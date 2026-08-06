@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.bill_completion import BillCompletion
@@ -81,6 +81,19 @@ def set_bill_status(
     db.commit()
     db.refresh(bill)
     return bill
+
+
+def delete_bill(db: Session, family_id: uuid.UUID, bill_id: uuid.UUID) -> None:
+    """Permanently removes the bill itself along with its scheduled
+    reminders, pending notifications, and completion history rows. Past
+    Transaction records created by completions are left untouched - they're
+    real financial history independent of the bill that generated them."""
+    bill = get_bill(db, family_id, bill_id)
+    db.execute(delete(Reminder).where(Reminder.bill_id == bill_id))
+    notifications_service.delete_notifications_for_bill(db, bill_id)
+    db.execute(delete(BillCompletion).where(BillCompletion.bill_id == bill_id))
+    db.delete(bill)
+    db.commit()
 
 
 def send_reminder(db: Session, family_id: uuid.UUID, bill_id: uuid.UUID) -> RecurringBill:

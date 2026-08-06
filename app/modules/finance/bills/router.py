@@ -66,6 +66,18 @@ def update_bill_status(family_id: uuid.UUID, bill_id: uuid.UUID):
     return envelope(BillResponse.model_validate(bill))
 
 
+@bp.delete("/<uuid:bill_id>")
+def delete_bill(family_id: uuid.UUID, bill_id: uuid.UUID):
+    user_id = get_current_user_id()
+    db = get_db()
+    require_active_member(db, family_id, user_id)
+    try:
+        service.delete_bill(db, family_id, bill_id)
+    except service.BillError as exc:
+        raise AppError(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    return no_content()
+
+
 @bp.post("/<uuid:bill_id>/remind")
 def remind_bill(family_id: uuid.UUID, bill_id: uuid.UUID):
     user_id = get_current_user_id()
