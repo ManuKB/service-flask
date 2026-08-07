@@ -10,7 +10,7 @@ from app.models.event_participant import EventParticipant
 from app.models.family_membership import FamilyMembership
 from app.models.notification import Notification
 from app.models.reminder import Reminder
-from app.modules.calendar.enums import RecurrenceFrequency
+from app.modules.calendar.enums import RecurrenceFrequency, ReminderLeadTime
 from app.modules.calendar.recurrence import format_weekdays, to_utc_naive
 from app.modules.notifications import service as notifications_service
 
@@ -86,6 +86,10 @@ def create_event(
     db.add(event)
     db.flush()
     _set_participants(db, event.id, participant_user_ids)
+    # Every event gets a 1-hour-before reminder automatically - no manual
+    # setup required. The user can still disable it or add more from the
+    # event detail view.
+    db.add(Reminder(event_id=event.id, lead_time=ReminderLeadTime.ONE_HOUR, is_enabled=True, created_by_user_id=user_id))
     db.commit()
     db.refresh(event)
     return event

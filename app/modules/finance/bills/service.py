@@ -54,6 +54,18 @@ def create_bill(
         created_by_user_id=user_id,
     )
     db.add(bill)
+    db.flush()
+    # Every bill gets a 1-day-before reminder automatically - no manual setup
+    # required. The user can still disable it or add more from the bill.
+    db.add(
+        Reminder(
+            bill_id=bill.id,
+            bill_offset=BillReminderOffset.ONE_DAY_BEFORE,
+            remind_time=time(9, 0),
+            is_enabled=True,
+            created_by_user_id=user_id,
+        )
+    )
     db.commit()
     db.refresh(bill)
     return bill

@@ -7,15 +7,17 @@ from app.core.database import SessionLocal
 from app.models.family import Family
 from app.modules.calendar.reminders.service import process_due_reminders
 from app.modules.finance.bills.service import process_due_bill_reminders
+from app.modules.notifications.digest import process_daily_digest
 from app.modules.tasks.service import process_due_task_reminders
 
 
 def _run_once() -> None:
     """Single shared pass, per family, for calendar-event reminders,
-    recurring-bill reminders, and task due-soon/overdue reminders - one
-    interval, one scheduler tick, covering all three kinds. Each kind is
-    isolated in its own try/except so a failure in one (or one family) never
-    blocks another kind or any other family from being processed."""
+    recurring-bill reminders, task due-soon/overdue reminders, and the
+    9 AM/7 PM overdue digest - one interval, one scheduler tick, covering all
+    four kinds. Each kind is isolated in its own try/except so a failure in
+    one (or one family) never blocks another kind or any other family from
+    being processed."""
     with SessionLocal() as db:
         family_ids = list(db.scalars(select(Family.id)))
         for family_id in family_ids:
@@ -35,6 +37,12 @@ def _run_once() -> None:
                 process_due_task_reminders(db, family_id)
             except Exception as exc:  # noqa: BLE001 - one family's failure must not stop the rest
                 print(f"[scheduler] task reminder processing failed for family {family_id}: {exc}")
+                db.rollback()
+
+            try:
+                process_daily_digest(db, family_id)
+            except Exception as exc:  # noqa: BLE001 - one family's failure must not stop the rest
+                print(f"[scheduler] daily digest processing failed for family {family_id}: {exc}")
                 db.rollback()
 
 
